@@ -1,0 +1,6 @@
+{
+  "name": "Halal Go",
+  "description": "Premium Halal Ride-Hailing, Delivery & Prayer Companion Super App.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
