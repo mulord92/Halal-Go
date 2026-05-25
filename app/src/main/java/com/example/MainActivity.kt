@@ -116,7 +116,7 @@ fun MainAppContent() {
                 color = PrimaryEmerald
               )
               Text(
-                text = if (isDriverMode) "Driver Dashboard • Ahmed K" else "Dubai Marina • Passenger",
+                text = if (isDriverMode) "Driver Dashboard • Ahmed K" else "Makati, Manila • Passenger",
                 fontSize = 12.sp,
                 color = OnSurfaceVariantText
               )
@@ -211,11 +211,6 @@ fun MainAppContent() {
             isSearching = isSearching
           )
           "Delivery" -> PassengerHomeScreen(viewModel = viewModel, userProfile = userProfile) // Embed within Home list
-          "Prayer" -> PrayerScreen(
-            viewModel = viewModel,
-            ramadanMode = userProfile?.ramadanModeEnabled ?: true,
-            compassRotation = viewModel.qiblaCompassRotation.collectAsStateWithLifecycle().value
-          )
           "Wallet" -> WalletScreen(
             viewModel = viewModel,
             userProfile = userProfile,
@@ -280,7 +275,6 @@ fun RowScope.PassengerNavigationTabs(
     Pair("Home", Icons.Default.Home),
     Pair("Ride", Icons.Default.Place),
     Pair("Delivery", Icons.Default.ShoppingCart),
-    Pair("Prayer", Icons.Default.Menu),
     Pair("Wallet", Icons.Default.Favorite)
   )
 
@@ -383,7 +377,7 @@ fun CustomZakatCalculatorDialog(
         OutlinedTextField(
           value = zakatInput,
           onValueChange = { onCalculateValue(it) },
-          label = { Text("Wealth in AED") },
+          label = { Text("Wealth in PHP") },
           modifier = Modifier
             .fillMaxWidth()
             .testTag("zakat_wealth_input_field"),
@@ -409,12 +403,12 @@ fun CustomZakatCalculatorDialog(
               verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
               Text("Your computed Zakat dues (2.5%)", fontSize = 11.sp, color = OnSurfaceVariantText)
-              Text("AED ${String.format("%.2f", computedZakat)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = PrimaryEmerald)
+              Text("PHP ${String.format("%.2f", computedZakat)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = PrimaryEmerald)
             }
           }
         } else if (zakatInput.isNotEmpty()) {
           Text(
-            text = "Total entered is below Nisab (AED 20,000 threshold). No Zakat due. Consider voluntary Sadaqah charity instead!",
+            text = "Total entered is below Nisab (PHP 20,000 threshold). No Zakat due. Consider voluntary Sadaqah charity instead!",
             fontSize = 11.sp,
             color = GoldSecondary,
             textAlign = TextAlign.Center,
@@ -430,7 +424,7 @@ fun CustomZakatCalculatorDialog(
         shape = RoundedCornerShape(8.dp)
       ) {
         Text(
-          text = if (computedZakat > 0.0) "Pay Zakat Now" else "Give AED 10 Sadaqah",
+          text = if (computedZakat > 0.0) "Pay Zakat Now" else "Give PHP 10 Sadaqah",
           color = OnSecondary,
           fontWeight = FontWeight.Bold
         )

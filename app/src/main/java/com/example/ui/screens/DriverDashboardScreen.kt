@@ -116,7 +116,7 @@ fun DriverDailyEarningsCard(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.Bottom
                     ) {
-                        Text(text = "AED", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = GoldSecondary)
+                        Text(text = "PHP", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = GoldSecondary)
                         Text(text = String.format("%.2f", earnings), fontSize = 36.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
@@ -291,7 +291,7 @@ fun DriverOnlineModeWaitingState(onClick: () -> Unit) {
                 color = GoldSecondary
             )
             Text(
-                text = "Online in Dubai Marina. Top priority active.",
+                text = "Online in Makati CBD. Top priority active.",
                 fontSize = 13.sp,
                 color = OnSurfaceVariantText
             )
@@ -385,7 +385,7 @@ fun IncomingRideRequestPopup(
                 ) {
                     Column(modifier = Modifier.padding(12.dp)) {
                         Text("Estimated Earnings", fontSize = 11.sp, color = OnSurfaceVariantText)
-                        Text("AED 45.00", fontSize = 15.sp, color = PrimaryEmerald, fontWeight = FontWeight.Bold)
+                        Text("PHP 45.00", fontSize = 15.sp, color = PrimaryEmerald, fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -425,11 +425,11 @@ fun IncomingRideRequestPopup(
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Column {
                         Text("PICKUP", fontSize = 10.sp, color = OnSurfaceVariantText, fontWeight = FontWeight.Bold)
-                        Text("Dubai Mall, Fashion Avenue", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                        Text("SM Mall of Asia, Pasay", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                     }
                     Column {
                         Text("DROP-OFF", fontSize = 10.sp, color = OnSurfaceVariantText, fontWeight = FontWeight.Bold)
-                        Text("Jumeirah Beach Residence", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                        Text("BGC High Street, Taguig", fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                     }
                 }
             }

@@ -373,7 +373,7 @@ fun SelectRideSheet(
                 RideSelectionOptionItem(
                     title = "Economy",
                     subtitle = "Affordable, everyday secure rides",
-                    priceLabel = "AED 12.50",
+                    priceLabel = "PHP 12.50",
                     durationLabel = "3 min",
                     isSelected = selectedType == "Economy",
                     promoTag = "Value",
@@ -383,7 +383,7 @@ fun SelectRideSheet(
                 RideSelectionOptionItem(
                     title = "Family (Safe)",
                     subtitle = "Spacious 6-seater, Halal vetted, absolute security",
-                    priceLabel = "AED 18.90",
+                    priceLabel = "PHP 18.90",
                     durationLabel = "5 min",
                     isSelected = selectedType == "Family",
                     promoTag = "Family Vetted",
@@ -393,7 +393,7 @@ fun SelectRideSheet(
                 RideSelectionOptionItem(
                     title = "Female Driver",
                     subtitle = "Sister-vetted driver for comfort & privacy",
-                    priceLabel = "AED 16.20",
+                    priceLabel = "PHP 16.20",
                     durationLabel = "7 min",
                     isSelected = selectedType == "Female",
                     promoTag = "Privacy",
@@ -403,7 +403,7 @@ fun SelectRideSheet(
                 RideSelectionOptionItem(
                     title = "Luxury",
                     subtitle = "Premium high-grade, spacious vehicles",
-                    priceLabel = "AED 24.00",
+                    priceLabel = "PHP 24.00",
                     durationLabel = "4 min",
                     isSelected = selectedType == "Luxury",
                     promoTag = "Premium",
@@ -604,7 +604,7 @@ fun BookedStatusSheet(
                     )
                 }
                 Text(
-                    text = "AED ${activeRide?.price ?: 18.90}",
+                    text = "PHP ${activeRide?.price ?: 18.90}",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = GoldSecondary

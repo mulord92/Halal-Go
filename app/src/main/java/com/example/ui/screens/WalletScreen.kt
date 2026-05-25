@@ -46,7 +46,7 @@ fun WalletScreen(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Balance card showing AED
+            // Balance card showing PHP
             WalletBalanceBentoCard(
                 balance = userProfile?.balance ?: 4280.50,
                 onTopUpClick = { viewModel.topupFunds() },
@@ -130,7 +130,7 @@ fun WeeklyAnalyticsGrid() {
                     Text("This Week", fontSize = 12.sp, color = OnSurfaceVariantText)
                     Text("+12%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TertiaryEmerald)
                 }
-                Text("1,840 AED", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("1,840 PHP", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 
                 // Visual bars representation
                 Row(
@@ -168,7 +168,7 @@ fun WeeklyAnalyticsGrid() {
                     Text("Last Week", fontSize = 12.sp, color = OnSurfaceVariantText)
                     Text("-4%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = ErrorRed)
                 }
-                Text("1,625 AED", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("1,625 PHP", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 
                 // Visual greyed bars
                 Row(

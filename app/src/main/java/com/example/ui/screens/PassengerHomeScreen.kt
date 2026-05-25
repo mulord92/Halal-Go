@@ -63,12 +63,6 @@ fun PassengerHomeScreen(
             onParcelClick = { viewModel.setPassengerTab("Delivery") }
         )
 
-        // Prayer countdown widget with active visual cues
-        PrayerWidgetSection(
-            ramadanMode = userProfile?.ramadanModeEnabled ?: true,
-            onWidgetClick = { viewModel.setPassengerTab("Prayer") }
-        )
-
         // Cinematic promotion banner card
         PromoBannerSection(onPromoClick = { viewModel.setPassengerTab("Ride") })
 
@@ -131,7 +125,7 @@ fun WalletBalanceBentoCard(
                             letterSpacing = 1.5.sp
                         )
                         Text(
-                            text = "AED ${String.format("%,.2f", balance)}",
+                            text = "PHP ${String.format("%,.2f", balance)}",
                             fontSize = 32.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White

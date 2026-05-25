@@ -35,8 +35,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Passenger Mode UI States
     val selectedRideType = MutableStateFlow("Family") // Economy, Family, Female, Luxury
-    val pickupQuery = MutableStateFlow("Dubai Marina")
-    val dropoffQuery = MutableStateFlow("Dubai Mall, Fashion Avenue")
+    val pickupQuery = MutableStateFlow("Makati CBD")
+    val dropoffQuery = MutableStateFlow("SM Mall of Asia, Pasay")
     val locationSearchFocus = MutableStateFlow(false)
 
     // Booking flows and details
@@ -273,10 +273,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun completeDriverActiveRide() {
         _isDriverOnActiveRide.value = false
-        // Insert earned driver transition credits (e.g., +45.00 AED)
+        // Insert earned driver transition credits (e.g., +45.00 PHP)
         viewModelScope.launch {
             repository.addTransaction(
-                title = "Earned Ride: Dubai Mall to JBR",
+                title = "Earned Ride: Mall of Asia to BGC",
                 amount = 45.00,
                 category = "RIDE",
                 dateTime = "Today, just now"
@@ -292,7 +292,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun calculateZakat(amountStr: String) {
         zakatInputWealth.value = amountStr
         val wealth = amountStr.toDoubleOrNull() ?: 0.0
-        // Nisab threshold is typically equivalent to ~85g of Gold, e.g. around AED 20,000.
+        // Nisab threshold is typically equivalent to ~85g of Gold, e.g. around PHP 20,000.
         // If wealth exceeds Nisab, Zakat is 2.5% simple calculating rate
         val result = if (wealth >= 20000.0) {
             wealth * 0.025
@@ -317,7 +317,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     zakatDue = maxOf(0.0, profile.zakatDue - customZakatAmt)
                 ))
                 showZakatCalculator.value = false
-                qrScanCompleteMessage.value = "Alhamdulillah! Zakat payment of AED $customZakatAmt completed."
+                qrScanCompleteMessage.value = "Alhamdulillah! Zakat payment of PHP $customZakatAmt completed."
                 delay(3000)
                 qrScanCompleteMessage.value = ""
             }
@@ -334,7 +334,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
             val profile = userProfile.value ?: UserProfile()
             repository.updateProfile(profile.copy(balance = profile.balance - amount))
-            qrScanCompleteMessage.value = "Alhamdulillah! Sadaqah collection of AED $amount received."
+            qrScanCompleteMessage.value = "Alhamdulillah! Sadaqah collection of PHP $amount received."
             delay(3000)
             qrScanCompleteMessage.value = ""
         }
