@@ -237,8 +237,10 @@ fun HlgoDigitalAssetCard(
                 }
 
                 Column(horizontalAlignment = Alignment.End) {
+                    val usdRate = 1.4789526806
+                    val phpValuation = hlgoBalance * usdRate * 61.0
                     Text("${String.format("%.2f", hlgoBalance)} HLGO", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    Text("≈ $1,245.50 USD", fontSize = 12.sp, color = TertiaryEmerald, fontWeight = FontWeight.SemiBold)
+                    Text("≈ PHP ${String.format("%,.2f", phpValuation)}", fontSize = 12.sp, color = TertiaryEmerald, fontWeight = FontWeight.SemiBold)
                 }
             }
 
@@ -505,7 +507,7 @@ fun TransactionHistoryRow(transaction: WalletTransaction) {
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "$amountSymbol$${String.format("%.2f", Math.abs(transaction.amount))}",
+                    text = "$amountSymbol PHP ${String.format("%,.2f", Math.abs(transaction.amount))}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = amountColor

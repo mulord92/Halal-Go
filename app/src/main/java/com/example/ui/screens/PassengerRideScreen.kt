@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +18,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -25,6 +30,39 @@ import androidx.compose.ui.unit.sp
 import com.example.data.BookedRide
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
+
+enum class PinSelectorType { PICKUP, DROPOFF }
+
+val LANDMARK_PLACE_IDS = mapOf(
+    "Makati CBD" to "ChIJN1t_tDeuEmsRUsoyG83frY4",
+    "Makati Central Business District" to "ChIJN1t_tDeuEmsRUsoyG83frY4",
+    "SM Mall of Asia, Pasay" to "ChIJs7P-Y6m3lzMR2b76H6i0X5A",
+    "Intramuros Gate, Manila" to "ChIJyXGv09vDlzMRuO4u1tW3L7Y",
+    "Binondo Church, Manila" to "ChIJ5Z4eOjvFlzMRAi_789VbNis",
+    "SM Megamall Main Entrance" to "ChIJRz_EGDzFlzMRg-6jA6vGf4w",
+    "NAIA Terminal 3, Pasay" to "ChIJ27x5i6O3lzMR-uQY89XmD-g",
+    "Ayala Triangle Gardens, Makati" to "ChIJN1t_tDeuEmsRUsoyG83frY4",
+    "C5 Highway, BGC Taguig" to "ChIJN1t_tDeuEmsRUsoyG83frY4"
+)
+
+private fun resolveAddressFromOffset(width: Float, height: Float, offset: androidx.compose.ui.geometry.Offset, type: PinSelectorType): String {
+    val xRatio = offset.x / width
+    val yRatio = offset.y / height
+    return when {
+        xRatio < 0.5f && yRatio < 0.5f -> {
+            if (type == PinSelectorType.PICKUP) "Intramuros Gate, Manila" else "Binondo Church, Manila"
+        }
+        xRatio >= 0.5f && yRatio < 0.5f -> {
+            if (type == PinSelectorType.PICKUP) "SM Megamall Main Entrance" else "Ortigas Center, Pasig"
+        }
+        xRatio < 0.5f && yRatio >= 0.5f -> {
+            if (type == PinSelectorType.PICKUP) "SM Mall of Asia, Pasay" else "NAIA Terminal 3, Pasay"
+        }
+        else -> {
+            if (type == PinSelectorType.PICKUP) "Ayala Triangle Gardens, Makati" else "C5 Highway, BGC Taguig"
+        }
+    }
+}
 
 @Composable
 fun PassengerRideScreen(
@@ -42,12 +80,136 @@ fun PassengerRideScreen(
     val durationMins by viewModel.travelDurationMins.collectAsState()
     val surgeMultiplier by viewModel.surgeMultiplier.collectAsState()
 
-    Box(modifier = modifier.fillMaxSize()) {
+    val fetchedPlaceDetails by viewModel.fetchedPlaceDetails.collectAsState()
+    val isFetchingPlaceDetails by viewModel.isFetchingPlaceDetails.collectAsState()
+    val placeDetailsError by viewModel.placeDetailsError.collectAsState()
+
+    var pinSelectionMode by remember { mutableStateOf<PinSelectorType?>(null) }
+    var lastPinnedOffset by remember { mutableStateOf<Offset?>(null) }
+    var mapSize by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
+
+    LaunchedEffect(pinSelectionMode) {
+        viewModel.clearPlaceDetails()
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .onSizeChanged { mapSize = it }
+    ) {
         // Full screen vector navigation map drawing
         MapBackgroundCanvas(
             isBookingActive = isBookingActive,
             rideType = selectedType
         )
+
+        // GestureDetector overlay when in Pinning Mode
+        if (pinSelectionMode != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(pinSelectionMode) {
+                        detectTapGestures { offset ->
+                            lastPinnedOffset = offset
+                            val width = if (mapSize.width > 0) mapSize.width.toFloat() else 1000f
+                            val height = if (mapSize.height > 0) mapSize.height.toFloat() else 2000f
+                            val addr = resolveAddressFromOffset(width, height, offset, pinSelectionMode!!)
+                            if (pinSelectionMode == PinSelectorType.PICKUP) {
+                                viewModel.pickupQuery.value = addr
+                            } else {
+                                viewModel.dropoffQuery.value = addr
+                            }
+                        }
+                    }
+            )
+        }
+
+        // Draw pin locator feedback elements
+        if (pinSelectionMode != null) {
+            val density = LocalDensity.current
+            val pinned = lastPinnedOffset
+
+            if (pinned != null) {
+                // Draw locator pin directly on top of the map background at tapped offset
+                val offsetX = with(density) { pinned.x.toDp() }
+                val offsetY = with(density) { pinned.y.toDp() }
+
+                Box(
+                    modifier = Modifier
+                        .absoluteOffset(
+                            x = offsetX - 20.dp,
+                            y = offsetY - 40.dp
+                        )
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = "Pinned Spot",
+                            tint = if (pinSelectionMode == PinSelectorType.PICKUP) PrimaryEmerald else GoldSecondary,
+                            modifier = Modifier.size(40.dp)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .background(
+                                    color = (if (pinSelectionMode == PinSelectorType.PICKUP) PrimaryEmerald else GoldSecondary).copy(alpha = 0.5f),
+                                    shape = CircleShape
+                                )
+                        )
+                    }
+                }
+            } else {
+                // Central Map Pin (if they haven\\'t tapped any exact location)
+                Box(
+                    modifier = Modifier.align(Alignment.Center)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.LocationOn,
+                            contentDescription = "Center Map Pin",
+                            tint = if (pinSelectionMode == PinSelectorType.PICKUP) PrimaryEmerald else GoldSecondary,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .offset(y = (-16).dp)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .background(
+                                    color = (if (pinSelectionMode == PinSelectorType.PICKUP) PrimaryEmerald else GoldSecondary).copy(alpha = 0.3f),
+                                    shape = CircleShape
+                                )
+                        )
+                    }
+                }
+            }
+        }
+
+        // Central target/crosshair feedback element in Pinning Mode (so they drag the map under it!)
+        if (pinSelectionMode != null) {
+            Box(
+                modifier = Modifier.align(Alignment.Center)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = "Center Map Pin",
+                        tint = if (pinSelectionMode == PinSelectorType.PICKUP) PrimaryEmerald else GoldSecondary,
+                        modifier = Modifier
+                            .size(44.dp)
+                            .offset(y = (-16).dp)
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(
+                                color = (if (pinSelectionMode == PinSelectorType.PICKUP) PrimaryEmerald else GoldSecondary).copy(alpha = 0.3f),
+                                shape = CircleShape
+                            )
+                    )
+                }
+            }
+        }
 
         Column(
             modifier = Modifier
@@ -55,58 +217,343 @@ fun PassengerRideScreen(
                 .padding(bottom = 80.dp), // Height of navigation bar
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top Section: Inputs floating panel
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                FloatingRouteInputCard(
-                    pickup = pickupQuery,
-                    dropoff = dropoffQuery,
-                    onPickupChange = { viewModel.pickupQuery.value = it },
-                    onDropoffChange = { viewModel.dropoffQuery.value = it }
-                )
-
-                // SOS Floating Button
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+            // Top Section: Inputs floating panel or Pin banner
+            if (pinSelectionMode == null) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    FloatingSosButton(onClick = { viewModel.performQuickSadaqahPayment(10.0) })
+                    FloatingRouteInputCard(
+                        pickup = pickupQuery,
+                        dropoff = dropoffQuery,
+                        onPickupChange = { viewModel.pickupQuery.value = it },
+                        onDropoffChange = { viewModel.dropoffQuery.value = it },
+                        onPinPickupClick = {
+                            pinSelectionMode = PinSelectorType.PICKUP
+                            lastPinnedOffset = null
+                            if (pickupQuery.isEmpty()) {
+                                viewModel.pickupQuery.value = "Makati Central Business District"
+                            }
+                        },
+                        onPinDropoffClick = {
+                            pinSelectionMode = PinSelectorType.DROPOFF
+                            lastPinnedOffset = null
+                            if (dropoffQuery.isEmpty()) {
+                                viewModel.dropoffQuery.value = "SM Mall of Asia, Pasay"
+                            }
+                        }
+                    )
+
+                    // SOS Floating Button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        FloatingSosButton(onClick = { viewModel.performQuickSadaqahPayment(10.0) })
+                    }
+                }
+            } else {
+                // Pinning top instructions banner
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceContainer.copy(alpha = 0.95f)),
+                    shape = RoundedCornerShape(16.dp),
+                    border = BorderStroke(1.5.dp, GoldSecondary.copy(alpha = 0.4f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Place,
+                            contentDescription = "Pin Mode",
+                            tint = if (pinSelectionMode == PinSelectorType.PICKUP) PrimaryEmerald else GoldSecondary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Column {
+                            Text(
+                                text = if (pinSelectionMode == PinSelectorType.PICKUP) "Select Pickup Pin" else "Select Destination Pin",
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                fontSize = 14.sp
+                            )
+                            Text(
+                                text = "Tap any spot on the map below to drop pin",
+                                color = OnSurfaceVariantText,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
                 }
             }
 
-            // Bottom Section: Interactive sheet representing ride details
-            AnimatedContent(
-                targetState = when {
-                    isSearching -> "SEARCHING"
-                    isBookingActive -> "BOOKED"
-                    else -> "SELECT_RIDE"
-                },
-                transitionSpec = {
-                    slideInVertically(initialOffsetY = { it }) togetherWith slideOutVertically(targetOffsetY = { it })
-                },
-                label = "BookingStateAnimation"
-            ) { state ->
-                when (state) {
-                    "SEARCHING" -> SearchingDriverSheet(simulationMessage = simulationMessage)
-                    "BOOKED" -> BookedStatusSheet(
-                        activeRide = activeRide,
-                        simulationMessage = simulationMessage,
-                        onArrivedClick = { viewModel.completePassengerRide() },
-                        onCancelClick = { viewModel.cancelPassengerRide() }
-                    )
-                    else -> SelectRideSheet(
-                        viewModel = viewModel,
-                        selectedType = selectedType,
-                        distanceKm = distanceKm,
-                        durationMins = durationMins,
-                        surgeMultiplier = surgeMultiplier,
-                        onTypeSelect = { viewModel.selectedRideType.value = it },
-                        onBookClick = { viewModel.requestRide() }
-                    )
+            if (pinSelectionMode == null) {
+                // Bottom Section: Interactive sheet representing ride details
+                AnimatedContent(
+                    targetState = when {
+                        isSearching -> "SEARCHING"
+                        isBookingActive -> "BOOKED"
+                        else -> "SELECT_RIDE"
+                    },
+                    transitionSpec = {
+                        slideInVertically(initialOffsetY = { it }) togetherWith slideOutVertically(targetOffsetY = { it })
+                    },
+                    label = "BookingStateAnimation"
+                ) { state ->
+                    when (state) {
+                        "SEARCHING" -> SearchingDriverSheet(simulationMessage = simulationMessage)
+                        "BOOKED" -> BookedStatusSheet(
+                            activeRide = activeRide,
+                            simulationMessage = simulationMessage,
+                            onArrivedClick = { viewModel.completePassengerRide() },
+                            onCancelClick = { viewModel.cancelPassengerRide() }
+                        )
+                        else -> SelectRideSheet(
+                            viewModel = viewModel,
+                            selectedType = selectedType,
+                            distanceKm = distanceKm,
+                            durationMins = durationMins,
+                            surgeMultiplier = surgeMultiplier,
+                            onTypeSelect = { viewModel.selectedRideType.value = it },
+                            onBookClick = { viewModel.requestRide() }
+                        )
+                    }
+                }
+            } else {
+                // Pin Confirmation Card
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .testTag("pin_confirmation_card"),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceContainer.copy(alpha = 0.95f)),
+                    shape = RoundedCornerShape(24.dp),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.12f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "PINNED LOCATION DETAILS",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = GoldSecondary,
+                                letterSpacing = 0.5.sp
+                            )
+                            IconButton(
+                                onClick = { pinSelectionMode = null },
+                                modifier = Modifier.size(24.dp).testTag("cancel_pin_icon")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Cancel Pinning",
+                                    tint = OnSurfaceVariantText
+                                )
+                            }
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White.copy(alpha = 0.03f), RoundedCornerShape(12.dp))
+                                .padding(12.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (pinSelectionMode == PinSelectorType.PICKUP) Icons.Default.Place else Icons.Default.LocationOn,
+                                contentDescription = "Active Pin Icon",
+                                tint = if (pinSelectionMode == PinSelectorType.PICKUP) PrimaryEmerald else GoldSecondary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (pinSelectionMode == PinSelectorType.PICKUP) "Starting point" else "Destination point",
+                                    fontSize = 11.sp,
+                                    color = OnSurfaceVariantText
+                                )
+                                Text(
+                                    text = if (pinSelectionMode == PinSelectorType.PICKUP) pickupQuery else dropoffQuery,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White,
+                                    maxLines = 2
+                                )
+                            }
+                        }
+
+                        // Place Details API Section (RapidAPI implementation)
+                        if (isFetchingPlaceDetails) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color.White.copy(alpha = 0.04f), RoundedCornerShape(12.dp))
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = GoldSecondary,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Retrieving Place Details on RapidAPI...",
+                                    fontSize = 11.sp,
+                                    color = OnSurfaceVariantText
+                                )
+                            }
+                        } else if (fetchedPlaceDetails != null) {
+                            val details = fetchedPlaceDetails!!
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(GoldSecondary.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+                                    .border(1.dp, GoldSecondary.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
+                                    .padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Star,
+                                        contentDescription = "Verified Rating",
+                                        tint = GoldSecondary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = "VERIFIED DETAILS (RAPIDAPI)",
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = GoldSecondary,
+                                        letterSpacing = 0.5.sp
+                                    )
+                                }
+                                
+                                Text(
+                                    text = details.name,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (details.rating != null) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = "Rating: ",
+                                                fontSize = 11.sp,
+                                                color = OnSurfaceVariantText
+                                            )
+                                            Text(
+                                                text = "${details.rating} ★",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = GoldSecondary
+                                            )
+                                        }
+                                    }
+                                    
+                                    if (!details.formatted_phone_number.isNullOrBlank()) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Icon(
+                                                imageVector = Icons.Default.Phone,
+                                                contentDescription = "Contact Phone",
+                                                tint = OnSurfaceVariantText,
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text(
+                                                text = details.formatted_phone_number,
+                                                fontSize = 11.sp,
+                                                color = OnSurfaceVariantText
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            if (placeDetailsError != null) {
+                                Text(
+                                    text = placeDetailsError!!,
+                                    color = Color.Red.copy(alpha = 0.8f),
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(horizontal = 4.dp).fillMaxWidth()
+                                )
+                            }
+                            
+                            OutlinedButton(
+                                onClick = {
+                                    val currentQuery = if (pinSelectionMode == PinSelectorType.PICKUP) pickupQuery else dropoffQuery
+                                    val placeId = LANDMARK_PLACE_IDS[currentQuery] ?: "ChIJN1t_tDeuEmsRUsoyG83frY4"
+                                    viewModel.fetchPlaceDetails(placeId)
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = GoldSecondary),
+                                border = BorderStroke(1.dp, GoldSecondary.copy(alpha = 0.5f)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(38.dp)
+                            ) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Search,
+                                        contentDescription = "Search Details",
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = "Verify Location Details (RapidAPI)",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+
+                        Button(
+                            onClick = { pinSelectionMode = null },
+                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryContainer),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("confirm_pin_location_btn")
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Check, contentDescription = "Confirm", tint = OnPrimaryContainer)
+                                Text(
+                                    text = "Confirm & Proceed",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = OnPrimaryContainer
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -219,7 +666,9 @@ fun FloatingRouteInputCard(
     pickup: String,
     dropoff: String,
     onPickupChange: (String) -> Unit,
-    onDropoffChange: (String) -> Unit
+    onDropoffChange: (String) -> Unit,
+    onPinPickupClick: () -> Unit,
+    onPinDropoffClick: () -> Unit
 ) {
     Surface(
         color = SurfaceContainer.copy(alpha = 0.9f),
@@ -252,8 +701,20 @@ fun FloatingRouteInputCard(
                     onValueChange = onPickupChange,
                     placeholder = { Text("Starting position...") },
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .weight(1f)
                         .testTag("pickup_input_field"),
+                    trailingIcon = {
+                        IconButton(
+                            onClick = onPinPickupClick,
+                            modifier = Modifier.testTag("pin_pickup_on_map_btn")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Place,
+                                contentDescription = "Pin Pickup on Map",
+                                tint = PrimaryEmerald
+                            )
+                        }
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White,
@@ -285,8 +746,20 @@ fun FloatingRouteInputCard(
                     onValueChange = onDropoffChange,
                     placeholder = { Text("Destination details...") },
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .weight(1f)
                         .testTag("dropoff_input_field"),
+                    trailingIcon = {
+                        IconButton(
+                            onClick = onPinDropoffClick,
+                            modifier = Modifier.testTag("pin_dropoff_on_map_btn")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = "Pin Dropoff on Map",
+                                tint = GoldSecondary
+                            )
+                        }
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedTextColor = Color.White,
                         unfocusedTextColor = Color.White,

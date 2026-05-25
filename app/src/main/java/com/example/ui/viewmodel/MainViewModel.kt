@@ -141,6 +141,45 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _qiblaCompassRotation = MutableStateFlow(145f)
     val qiblaCompassRotation: StateFlow<Float> = _qiblaCompassRotation.asStateFlow()
 
+    // Place Details via RapidAPI
+    private val _fetchedPlaceDetails = MutableStateFlow<PlaceResult?>(null)
+    val fetchedPlaceDetails: StateFlow<PlaceResult?> = _fetchedPlaceDetails.asStateFlow()
+
+    private val _isFetchingPlaceDetails = MutableStateFlow(false)
+    val isFetchingPlaceDetails: StateFlow<Boolean> = _isFetchingPlaceDetails.asStateFlow()
+
+    private val _placeDetailsError = MutableStateFlow<String?>(null)
+    val placeDetailsError: StateFlow<String?> = _placeDetailsError.asStateFlow()
+
+    fun fetchPlaceDetails(placeId: String = "ChIJN1t_tDeuEmsRUsoyG83frY4") {
+        viewModelScope.launch {
+            _isFetchingPlaceDetails.value = true
+            _placeDetailsError.value = null
+            try {
+                val response = PlaceDetailsApi.service.getPlaceDetails(
+                    placeId = placeId,
+                    fields = "name,rating,formatted_phone_number",
+                    host = "google-map-place-api.p.rapidapi.com",
+                    apiKey = "7f5b0129a4msh804b0a4c8cfa1e9p157b17jsn9456e7726948"
+                )
+                if (response.status == "OK" && response.result != null) {
+                    _fetchedPlaceDetails.value = response.result
+                } else {
+                    _placeDetailsError.value = "Status: ${response.status}"
+                }
+            } catch (e: Exception) {
+                _placeDetailsError.value = "Error: ${e.localizedMessage}"
+            } finally {
+                _isFetchingPlaceDetails.value = false
+            }
+        }
+    }
+
+    fun clearPlaceDetails() {
+        _fetchedPlaceDetails.value = null
+        _placeDetailsError.value = null
+    }
+
     init {
         // Prepare database and populates dummy parameters if missing
         viewModelScope.launch {
