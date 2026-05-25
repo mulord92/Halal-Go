@@ -86,7 +86,34 @@ fun MainAppContent() {
   val zakatInputWealth by viewModel.zakatInputWealth.collectAsStateWithLifecycle()
   val computedZakatResult by viewModel.computedZakatResult.collectAsStateWithLifecycle()
 
-  if (userProfile != null && !userProfile!!.isLoggedIn) {
+  if (userProfile == null) {
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .background(DarkBackground),
+      contentAlignment = Alignment.Center
+    ) {
+      Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+      ) {
+         Box(
+           modifier = Modifier
+             .size(80.dp)
+             .background(DarkSurface, RoundedCornerShape(20.dp))
+             .border(1.5.dp, GoldSecondary.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
+             .padding(8.dp)
+         ) {
+           androidx.compose.foundation.Image(
+             painter = painterResource(id = R.drawable.halalgo_app_icon_v2_1779698294501),
+             contentDescription = "Halal Go App Icon",
+             modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
+           )
+         }
+         CircularProgressIndicator(color = PrimaryEmerald, strokeWidth = 3.dp)
+      }
+    }
+  } else if (!userProfile!!.isLoggedIn) {
     GoogleSignInScreen(
       viewModel = viewModel,
       onLoginSuccess = { name, email ->

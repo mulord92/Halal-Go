@@ -8,6 +8,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
+data class RideFareBreakdown(
+    val baseFare: Double,
+    val distanceFare: Double,
+    val timeFare: Double,
+    val standardFare: Double,
+    val surgeMultiplier: Double,
+    val surgeComponent: Double,
+    val totalFare: Double
+)
+
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val db = AppDatabase.getDatabase(application)
@@ -38,6 +48,58 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val pickupQuery = MutableStateFlow("Makati CBD")
     val dropoffQuery = MutableStateFlow("SM Mall of Asia, Pasay")
     val locationSearchFocus = MutableStateFlow(false)
+
+    val surgeMultiplier = MutableStateFlow(1.2) // Range 1.0 to 2.0 (COULD BE ADJUSTED LIVE!)
+
+    // Dynamic distance calculation based on pickup/dropoff query length and content
+    val travelDistanceKm: StateFlow<Double> = combine(pickupQuery, dropoffQuery) { pickup, dropoff ->
+        val jointLength = (pickup.trim().length + dropoff.trim().length).toDouble()
+        if (jointLength == 0.0) {
+            6.5
+        } else {
+            val calc = (jointLength % 12.0) + 3.0
+            kotlin.math.round(calc * 10.0) / 10.0
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 6.5)
+
+    // Dynamic travel duration calculation based on distance
+    val travelDurationMins: StateFlow<Int> = travelDistanceKm.map { distance ->
+        val mins = (distance * 2.2).toInt() + 6
+        mins.coerceIn(5, 75)
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 18)
+
+    fun getBaseFareForType(type: String): Double {
+        return when (type) {
+            "Economy" -> 55.0  // Hatchback
+            "Female" -> 65.0   // Sedan (Standard GrabCar)
+            "Family" -> 75.0   // AUV / SUV
+            "Luxury" -> 165.0  // Premium
+            else -> 55.0
+        }
+    }
+
+    fun getTimeRateForType(type: String): Double {
+        return if (type == "Luxury") 4.0 else 2.0
+    }
+
+    fun getFareBreakdown(type: String, distance: Double, duration: Int, surge: Double): RideFareBreakdown {
+        val base = getBaseFareForType(type)
+        val distanceFare = distance * 15.0
+        val timeFare = duration * getTimeRateForType(type)
+        val standardFare = base + distanceFare + timeFare
+        val surgeComponent = standardFare * (surge - 1.0)
+        val totalFare = standardFare * surge
+        
+        return RideFareBreakdown(
+            baseFare = base,
+            distanceFare = distanceFare,
+            timeFare = timeFare,
+            standardFare = standardFare,
+            surgeMultiplier = surge,
+            surgeComponent = surgeComponent,
+            totalFare = kotlin.math.round(totalFare * 100.0) / 100.0
+        )
+    }
 
     // Booking flows and details
     private val _isBookingState = MutableStateFlow(false) // Whether booking is active
@@ -144,18 +206,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _simulationMessage.value = "Sending request to nearby vetted drivers..."
             delay(2500)
             
-            // Generate simulated active ride
-            val price = when (selectedRideType.value) {
-                "Economy" -> 12.50
-                "Family" -> 18.90
-                "Female" -> 16.20
-                "Luxury" -> 24.00
-                else -> 12.50
-            }
+            // Generate simulated active ride with Grab calculation rules
+            val dist = travelDistanceKm.value
+            val dur = travelDurationMins.value
+            val surge = surgeMultiplier.value
+            val type = selectedRideType.value
+            val finalPrice = getFareBreakdown(type, dist, dur, surge).totalFare
+
             repository.createRide(
                 pickup = pickupQuery.value,
                 dropoff = dropoffQuery.value,
-                price = price,
+                price = finalPrice,
                 type = selectedRideType.value
             )
             _isRideSearching.value = false

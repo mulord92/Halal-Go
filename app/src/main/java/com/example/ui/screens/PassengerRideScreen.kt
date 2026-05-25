@@ -38,6 +38,9 @@ fun PassengerRideScreen(
     val pickupQuery by viewModel.pickupQuery.collectAsState()
     val dropoffQuery by viewModel.dropoffQuery.collectAsState()
     val simulationMessage by viewModel.simulationMessage.collectAsState()
+    val distanceKm by viewModel.travelDistanceKm.collectAsState()
+    val durationMins by viewModel.travelDurationMins.collectAsState()
+    val surgeMultiplier by viewModel.surgeMultiplier.collectAsState()
 
     Box(modifier = modifier.fillMaxSize()) {
         // Full screen vector navigation map drawing
@@ -96,7 +99,11 @@ fun PassengerRideScreen(
                         onCancelClick = { viewModel.cancelPassengerRide() }
                     )
                     else -> SelectRideSheet(
+                        viewModel = viewModel,
                         selectedType = selectedType,
+                        distanceKm = distanceKm,
+                        durationMins = durationMins,
+                        surgeMultiplier = surgeMultiplier,
                         onTypeSelect = { viewModel.selectedRideType.value = it },
                         onBookClick = { viewModel.requestRide() }
                     )
@@ -324,10 +331,27 @@ fun FloatingSosButton(onClick: () -> Unit) {
 
 @Composable
 fun SelectRideSheet(
+    viewModel: MainViewModel,
     selectedType: String,
+    distanceKm: Double,
+    durationMins: Int,
+    surgeMultiplier: Double,
     onTypeSelect: (String) -> Unit,
     onBookClick: () -> Unit
 ) {
+    val economyBreakdown = viewModel.getFareBreakdown("Economy", distanceKm, durationMins, surgeMultiplier)
+    val familyBreakdown = viewModel.getFareBreakdown("Family", distanceKm, durationMins, surgeMultiplier)
+    val femaleBreakdown = viewModel.getFareBreakdown("Female", distanceKm, durationMins, surgeMultiplier)
+    val luxuryBreakdown = viewModel.getFareBreakdown("Luxury", distanceKm, durationMins, surgeMultiplier)
+
+    val selectedBreakdown = when (selectedType) {
+        "Economy" -> economyBreakdown
+        "Family" -> familyBreakdown
+        "Female" -> femaleBreakdown
+        "Luxury" -> luxuryBreakdown
+        else -> economyBreakdown
+    }
+
     Surface(
         color = SurfaceContainer.copy(alpha = 0.95f),
         shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
@@ -338,7 +362,9 @@ fun SelectRideSheet(
             .testTag("select_ride_bottom_sheet")
     ) {
         Column(
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Box(
@@ -361,19 +387,80 @@ fun SelectRideSheet(
                     color = PrimaryEmerald
                 )
                 Text(
-                    text = "NEARBY (4 MINS)",
-                    fontSize = 10.sp,
-                    color = OnSurfaceVariantText,
+                    text = "%,.1f KM • %d MINS".format(distanceKm, durationMins),
+                    fontSize = 11.sp,
+                    color = GoldSecondary,
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+                    letterSpacing = 0.5.sp
                 )
+            }
+
+            // Dynamics surge controller
+            Card(
+                colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.03f)),
+                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f)),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Surge factor",
+                                tint = GoldSecondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Simulate Traffic Surge",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                        }
+                        Text(
+                            text = "%,.2fx".format(surgeMultiplier),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = GoldSecondary
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(6.dp))
+                    
+                    Slider(
+                        value = surgeMultiplier.toFloat(),
+                        onValueChange = { viewModel.surgeMultiplier.value = it.toDouble() },
+                        valueRange = 1.0f..2.0f,
+                        colors = SliderDefaults.colors(
+                            thumbColor = GoldSecondary,
+                            activeTrackColor = GoldSecondary,
+                            inactiveTrackColor = Color.White.copy(alpha = 0.15f)
+                        ),
+                        modifier = Modifier.fillMaxWidth().height(24.dp).testTag("surge_slider")
+                    )
+                    
+                    Text(
+                        text = "Capped at legally mandated LTFRB 2.0x limit",
+                        fontSize = 9.sp,
+                        color = OnSurfaceVariantText.copy(alpha = 0.6f),
+                        style = androidx.compose.ui.text.TextStyle(fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
+                    )
+                }
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 RideSelectionOptionItem(
                     title = "Economy",
-                    subtitle = "Affordable, everyday secure rides",
-                    priceLabel = "PHP 12.50",
+                    subtitle = "Grab Hatchback Pattern • ₱55 Base",
+                    priceLabel = "₱%,.2f".format(economyBreakdown.totalFare),
                     durationLabel = "3 min",
                     isSelected = selectedType == "Economy",
                     promoTag = "Value",
@@ -382,18 +469,18 @@ fun SelectRideSheet(
 
                 RideSelectionOptionItem(
                     title = "Family (Safe)",
-                    subtitle = "Spacious 6-seater, Halal vetted, absolute security",
-                    priceLabel = "PHP 18.90",
+                    subtitle = "Grab SUV Pattern • ₱75 Base",
+                    priceLabel = "₱%,.2f".format(familyBreakdown.totalFare),
                     durationLabel = "5 min",
                     isSelected = selectedType == "Family",
-                    promoTag = "Family Vetted",
+                    promoTag = "6-Seater",
                     onClick = { onTypeSelect("Family") }
                 )
 
                 RideSelectionOptionItem(
                     title = "Female Driver",
-                    subtitle = "Sister-vetted driver for comfort & privacy",
-                    priceLabel = "PHP 16.20",
+                    subtitle = "Grab Sedan Pattern • ₱65 Base",
+                    priceLabel = "₱%,.2f".format(femaleBreakdown.totalFare),
                     durationLabel = "7 min",
                     isSelected = selectedType == "Female",
                     promoTag = "Privacy",
@@ -402,13 +489,115 @@ fun SelectRideSheet(
 
                 RideSelectionOptionItem(
                     title = "Luxury",
-                    subtitle = "Premium high-grade, spacious vehicles",
-                    priceLabel = "PHP 24.00",
+                    subtitle = "Grab Premium • ₱165 Base • ₱4/min",
+                    priceLabel = "₱%,.2f".format(luxuryBreakdown.totalFare),
                     durationLabel = "4 min",
                     isSelected = selectedType == "Luxury",
                     promoTag = "Premium",
                     onClick = { onTypeSelect("Luxury") }
                 )
+            }
+
+            // Upfront Agreement Card (Aqd-compliant transparent details)
+            Card(
+                colors = CardDefaults.cardColors(containerColor = PrimaryEmerald.copy(alpha = 0.05f)),
+                border = BorderStroke(1.dp, PrimaryEmerald.copy(alpha = 0.25f)),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "COMPLIANT UPFRONT CONTRACT FARE",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryEmerald,
+                            letterSpacing = 0.5.sp
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Compliant logo",
+                                tint = PrimaryEmerald,
+                                modifier = Modifier.size(12.dp)
+                            )
+                            Text(
+                                text = "Zero Extra Fee",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryEmerald
+                            )
+                        }
+                    }
+
+                    HorizontalDivider(color = PrimaryEmerald.copy(alpha = 0.15f))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Base Flag-down Fee", fontSize = 11.sp, color = OnSurfaceVariantText)
+                        Text("₱%,.2f".format(selectedBreakdown.baseFare), fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text("Distance Charge (₱15/km)", fontSize = 11.sp, color = OnSurfaceVariantText)
+                        Text("₱%,.2f".format(selectedBreakdown.distanceFare), fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        val minRate = if (selectedType == "Luxury") 4 else 2
+                        Text("Duration Charge (₱%d/min)".format(minRate), fontSize = 11.sp, color = OnSurfaceVariantText)
+                        Text("₱%,.2f".format(selectedBreakdown.timeFare), fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.SemiBold)
+                    }
+
+                    if (selectedBreakdown.surgeMultiplier > 1.0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text("LTFRB Regulated Surge Modifier", fontSize = 11.sp, color = OnSurfaceVariantText)
+                            Text("+₱%,.2f (%,.2fx)".format(selectedBreakdown.surgeComponent, selectedBreakdown.surgeMultiplier), fontSize = 12.sp, color = GoldSecondary, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    HorizontalDivider(color = PrimaryEmerald.copy(alpha = 0.15f))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Final Bound Contract Price",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "₱%,.2f".format(selectedBreakdown.totalFare),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryEmerald
+                        )
+                    }
+                }
             }
 
             Button(
@@ -421,7 +610,7 @@ fun SelectRideSheet(
                     .testTag("book_now_button")
             ) {
                 Text(
-                    text = "Book Now",
+                    text = "Agree & Book Upfront",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = OnPrimaryContainer
@@ -603,8 +792,9 @@ fun BookedStatusSheet(
                         color = PrimaryEmerald
                     )
                 }
+                val displayedPrice = activeRide?.price?.let { "₱%,.2f".format(it) } ?: "₱18.90"
                 Text(
-                    text = "PHP ${activeRide?.price ?: 18.90}",
+                    text = displayedPrice,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = GoldSecondary
