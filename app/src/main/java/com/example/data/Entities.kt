@@ -34,5 +34,8 @@ data class UserProfile(
     val zakatDue: Double = 311.27,
     val isSadaqahRoundUp: Boolean = true,
     val isHalalFilter: Boolean = false,
-    val ramadanModeEnabled: Boolean = true
+    val ramadanModeEnabled: Boolean = true,
+    val profilePicture: String? = null,
+    val email: String = "ahmed.k@example.com",
+    val isLoggedIn: Boolean = false
 )

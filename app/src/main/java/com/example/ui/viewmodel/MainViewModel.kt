@@ -372,4 +372,43 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             )
         }
     }
+
+    fun googleLogin(name: String, email: String) {
+        viewModelScope.launch {
+            val profile = userProfile.value ?: UserProfile()
+            repository.updateProfile(profile.copy(
+                name = name,
+                email = email,
+                isLoggedIn = true
+            ))
+        }
+    }
+
+    fun logout() {
+        viewModelScope.launch {
+            val profile = userProfile.value ?: UserProfile()
+            repository.updateProfile(profile.copy(
+                isLoggedIn = false
+            ))
+        }
+    }
+
+    fun updateProfileNameAndEmail(name: String, email: String) {
+        viewModelScope.launch {
+            val profile = userProfile.value ?: UserProfile()
+            repository.updateProfile(profile.copy(
+                name = name,
+                email = email
+            ))
+        }
+    }
+
+    fun updateProfilePicture(imagePath: String?) {
+        viewModelScope.launch {
+            val profile = userProfile.value ?: UserProfile()
+            repository.updateProfile(profile.copy(
+                profilePicture = imagePath
+            ))
+        }
+    }
 }

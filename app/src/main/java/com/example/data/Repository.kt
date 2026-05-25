@@ -26,7 +26,10 @@ class HalalGoRepository(private val dao: HalalGoDao) {
                 zakatDue = 311.27,
                 isSadaqahRoundUp = true,
                 isHalalFilter = false,
-                ramadanModeEnabled = true
+                ramadanModeEnabled = true,
+                profilePicture = null,
+                email = "ahmed.k@example.com",
+                isLoggedIn = false
             )
             dao.insertOrUpdateProfile(defaultProfile)
         }
