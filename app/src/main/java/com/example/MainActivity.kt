@@ -211,37 +211,7 @@ fun MainAppContent() {
                 color = if (isDriverOnline) PrimaryEmerald else ErrorRed
               )
             }
-          } else {
-            // Zakat quick action
-            IconButton(
-              onClick = { viewModel.showZakatCalculator.value = true },
-              modifier = Modifier.testTag("quick_zakat_calculator_trigger")
-            ) {
-              Icon(
-                imageVector = Icons.Default.Favorite,
-                contentDescription = "Quick Zakat dues calculator",
-                tint = GoldSecondary
-              )
-            }
           }
-
-          IconButton(onClick = { viewModel.triggerMockScanner() }) {
-            Icon(
-              imageVector = Icons.Default.Notifications,
-              contentDescription = "Notifications alerts feed",
-              tint = Color.White
-            )
-          }
-
-          // Custom Vertical divider
-          Spacer(modifier = Modifier.width(4.dp))
-          Box(
-            modifier = Modifier
-              .height(24.dp)
-              .width(1.dp)
-              .background(Color.White.copy(alpha = 0.15f))
-          )
-          Spacer(modifier = Modifier.width(4.dp))
 
           // Profile area (click to configure profile picture or sign out)
           Row(
