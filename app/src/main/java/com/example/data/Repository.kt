@@ -17,66 +17,21 @@ class HalalGoRepository(private val dao: HalalGoDao) {
     suspend fun populateInitialDataIfEmpty() {
         val currentProfile = dao.getUserProfile().firstOrNull()
         if (currentProfile == null) {
-            // Populate default user profile matching screenshots
+            // Populate extremely clean empty profile for the custom Registration flow
             val defaultProfile = UserProfile(
                 id = 1,
-                name = "Ahmed K.",
-                balance = 12450.85,
-                hlgoBalance = 842.15,
-                zakatDue = 311.27,
+                name = "",
+                balance = 0.0,
+                hlgoBalance = 0.0,
+                zakatDue = 0.0,
                 isSadaqahRoundUp = true,
                 isHalalFilter = false,
                 ramadanModeEnabled = true,
                 profilePicture = null,
-                email = "ahmed.k@example.com",
+                email = "",
                 isLoggedIn = false
             )
             dao.insertOrUpdateProfile(defaultProfile)
-        }
-
-        val allTx = dao.getAllTransactions().firstOrNull()
-        if (allTx.isNullOrEmpty()) {
-            // Populate dummy transactions matching screenshots exactly
-            val transactions = listOf(
-                WalletTransaction(
-                    category = "FOOD",
-                    title = "Green Oasis Cafe",
-                    amount = -24.50,
-                    dateTimeString = "Today, 12:45 PM",
-                    statusString = "COMPLETED"
-                ),
-                WalletTransaction(
-                    category = "RIDE",
-                    title = "Halal Go Ride",
-                    amount = -18.20,
-                    dateTimeString = "Yesterday, 08:30 PM",
-                    statusString = "COMPLETED"
-                ),
-                WalletTransaction(
-                    category = "BANK",
-                    title = "Top up via Bank",
-                    amount = 500.00,
-                    dateTimeString = "2 days ago, 10:15 AM",
-                    statusString = "COMPLETED"
-                ),
-                WalletTransaction(
-                    category = "WITHDRAWAL",
-                    title = "Withdrawal to Bank",
-                    amount = -1200.00,
-                    dateTimeString = "Yesterday, 09:15 AM",
-                    statusString = "PENDING"
-                ),
-                WalletTransaction(
-                    category = "BONUS",
-                    title = "Weekly Bonus",
-                    amount = 250.00,
-                    dateTimeString = "Oct 24, 2023",
-                    statusString = "COMPLETED"
-                )
-            )
-            for (tx in transactions) {
-                dao.insertTransaction(tx)
-            }
         }
     }
 

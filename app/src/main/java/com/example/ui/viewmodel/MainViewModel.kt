@@ -476,11 +476,59 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun googleLogin(name: String, email: String) {
         viewModelScope.launch {
             val profile = userProfile.value ?: UserProfile()
+            val finalBalance = if (profile.balance == 0.0) 12450.85 else profile.balance
+            val finalHlgoBalance = if (profile.hlgoBalance == 0.0) 842.15 else profile.hlgoBalance
             repository.updateProfile(profile.copy(
                 name = name,
                 email = email,
+                balance = finalBalance,
+                hlgoBalance = finalHlgoBalance,
+                zakatDue = finalBalance * 0.025,
                 isLoggedIn = true
             ))
+
+            if (finalBalance > 0.0) {
+                repository.addTransaction(
+                    category = "BANK",
+                    title = "Google Auth Provision",
+                    amount = finalBalance,
+                    dateTime = "Just now"
+                )
+            }
+        }
+    }
+
+    fun registerProfile(
+        name: String,
+        email: String,
+        balance: Double,
+        hlgoBalance: Double,
+        ramadanMode: Boolean,
+        halalFilter: Boolean,
+        sadaqahRoundUp: Boolean
+    ) {
+        viewModelScope.launch {
+            val profile = userProfile.value ?: UserProfile()
+            repository.updateProfile(profile.copy(
+                name = name,
+                email = email,
+                balance = balance,
+                hlgoBalance = hlgoBalance,
+                zakatDue = balance * 0.025, // 2.5% standard Shariah calculation format
+                isSadaqahRoundUp = sadaqahRoundUp,
+                isHalalFilter = halalFilter,
+                ramadanModeEnabled = ramadanMode,
+                isLoggedIn = true
+            ))
+
+            if (balance > 0.0) {
+                repository.addTransaction(
+                    category = "BANK",
+                    title = "Initial Registration Provision",
+                    amount = balance,
+                    dateTime = "Just now"
+                )
+            }
         }
     }
 

@@ -114,8 +114,19 @@ fun MainAppContent() {
       }
     }
   } else if (!userProfile!!.isLoggedIn) {
-    GoogleSignInScreen(
+    RegistrationScreen(
       viewModel = viewModel,
+      onRegistrationSuccess = { name, email, balance, hlgoBalance, ramadanMode, halalFilter, sadaqahRoundUp ->
+        viewModel.registerProfile(
+          name = name,
+          email = email,
+          balance = balance,
+          hlgoBalance = hlgoBalance,
+          ramadanMode = ramadanMode,
+          halalFilter = halalFilter,
+          sadaqahRoundUp = sadaqahRoundUp
+        )
+      },
       onLoginSuccess = { name, email ->
         viewModel.googleLogin(name, email)
       }
@@ -187,7 +198,7 @@ fun MainAppContent() {
 
             Column {
               Text(
-                text = userProfile?.name ?: "Ahmed K.",
+                text = userProfile?.name ?: "",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = PrimaryEmerald
@@ -538,8 +549,8 @@ fun GoogleSignInScreen(
     viewModel: MainViewModel,
     onLoginSuccess: (name: String, email: String) -> Unit
 ) {
-    var nameInput by remember { mutableStateOf("Ahmed K.") }
-    var emailInput by remember { mutableStateOf("ahmed.k@gmail.com") }
+    var nameInput by remember { mutableStateOf("") }
+    var emailInput by remember { mutableStateOf("") }
     var showAccountChooser by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()

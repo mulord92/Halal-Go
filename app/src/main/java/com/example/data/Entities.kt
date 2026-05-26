@@ -28,14 +28,14 @@ data class WalletTransaction(
 @Entity(tableName = "user_profiles")
 data class UserProfile(
     @PrimaryKey val id: Int = 1,
-    val name: String = "Ahmed K.",
-    val balance: Double = 12450.85,
-    val hlgoBalance: Double = 842.15,
-    val zakatDue: Double = 311.27,
+    val name: String = "",
+    val balance: Double = 0.0,
+    val hlgoBalance: Double = 0.0,
+    val zakatDue: Double = 0.0,
     val isSadaqahRoundUp: Boolean = true,
     val isHalalFilter: Boolean = false,
     val ramadanModeEnabled: Boolean = true,
     val profilePicture: String? = null,
-    val email: String = "ahmed.k@example.com",
+    val email: String = "",
     val isLoggedIn: Boolean = false
 )
