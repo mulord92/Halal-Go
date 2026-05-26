@@ -298,7 +298,7 @@ fun MainAppContent() {
             isBookingActive = isBookingActive,
             isSearching = isSearching
           )
-          "Delivery" -> PassengerHomeScreen(viewModel = viewModel, userProfile = userProfile) // Embed within Home list
+          "Delivery" -> PassengerDeliveryScreen(viewModel = viewModel, userProfile = userProfile)
           "Wallet" -> WalletScreen(
             viewModel = viewModel,
             userProfile = userProfile,

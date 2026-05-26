@@ -30,6 +30,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentPassengerTab = MutableStateFlow("Home") // Home, Ride, Delivery, Prayer, Wallet
     val currentPassengerTab: StateFlow<String> = _currentPassengerTab.asStateFlow()
 
+    private val _currentDeliverySubTab = MutableStateFlow("Food") // Food, Grocery, Parcel
+    val currentDeliverySubTab: StateFlow<String> = _currentDeliverySubTab.asStateFlow()
+
     private val _currentDriverTab = MutableStateFlow("Home") // Home, Earnings, Wallet, Profile
     val currentDriverTab: StateFlow<String> = _currentDriverTab.asStateFlow()
 
@@ -210,6 +213,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setPassengerTab(tab: String) {
         _currentPassengerTab.value = tab
+    }
+
+    fun setDeliverySubTab(subTab: String) {
+        _currentDeliverySubTab.value = subTab
     }
 
     fun setDriverTab(tab: String) {
@@ -557,6 +564,80 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             repository.updateProfile(profile.copy(
                 profilePicture = imagePath
             ))
+        }
+    }
+
+    fun placeFoodOrder(restaurantName: String, itemName: String, price: Double, hasSadaqahRoundUp: Boolean) {
+        viewModelScope.launch {
+            val baseCost = -price
+            repository.addTransaction(
+                title = "Halal Food - $itemName ($restaurantName)",
+                amount = baseCost,
+                category = "FOOD",
+                dateTime = "Just now"
+            )
+
+            if (hasSadaqahRoundUp) {
+                // Round up to nearest 10
+                val nextTen = Math.ceil(price / 10.0) * 10.0
+                val diffCount = nextTen - price
+                if (diffCount > 0.05) {
+                    repository.addTransaction(
+                        title = "Sadaqah Round-Up Donation",
+                        amount = -diffCount,
+                        category = "WITHDRAWAL",
+                        dateTime = "Just now"
+                    )
+                }
+            }
+        }
+    }
+
+    fun placeGroceryOrder(storeName: String, itemsCount: Int, price: Double, hasSadaqahRoundUp: Boolean) {
+        viewModelScope.launch {
+            repository.addTransaction(
+                title = "Grocery Order ($itemsCount items from $storeName)",
+                amount = -price,
+                category = "FOOD",
+                dateTime = "Just now"
+            )
+
+            if (hasSadaqahRoundUp) {
+                val nextTen = Math.ceil(price / 10.0) * 10.0
+                val diffCount = nextTen - price
+                if (diffCount > 0.05) {
+                    repository.addTransaction(
+                        title = "Sadaqah Round-Up Donation",
+                        amount = -diffCount,
+                        category = "WITHDRAWAL",
+                        dateTime = "Just now"
+                    )
+                }
+            }
+        }
+    }
+
+    fun bookParcelDelivery(sender: String, receiver: String, typeString: String, price: Double, hasSadaqahRoundUp: Boolean) {
+        viewModelScope.launch {
+            repository.addTransaction(
+                title = "Parcel Delivery to $receiver",
+                amount = -price,
+                category = "RIDE",
+                dateTime = "Just now"
+            )
+
+            if (hasSadaqahRoundUp) {
+                val nextTen = Math.ceil(price / 10.0) * 10.0
+                val diffCount = nextTen - price
+                if (diffCount > 0.05) {
+                    repository.addTransaction(
+                        title = "Sadaqah Round-Up Donation",
+                        amount = -diffCount,
+                        category = "WITHDRAWAL",
+                        dateTime = "Just now"
+                    )
+                }
+            }
         }
     }
 }

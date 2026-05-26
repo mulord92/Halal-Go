@@ -58,9 +58,18 @@ fun PassengerHomeScreen(
         // Services Action Grid (Ride, Food, Grocery, Parcel)
         QuickActionGridSection(
             onRideClick = { viewModel.setPassengerTab("Ride") },
-            onFoodClick = { viewModel.setPassengerTab("Delivery") },
-            onGroceryClick = { viewModel.setPassengerTab("Delivery") },
-            onParcelClick = { viewModel.setPassengerTab("Delivery") }
+            onFoodClick = { 
+                viewModel.setPassengerTab("Delivery")
+                viewModel.setDeliverySubTab("Food")
+            },
+            onGroceryClick = { 
+                viewModel.setPassengerTab("Delivery")
+                viewModel.setDeliverySubTab("Grocery")
+            },
+            onParcelClick = { 
+                viewModel.setPassengerTab("Delivery")
+                viewModel.setDeliverySubTab("Parcel")
+            }
         )
 
         // Cinematic promotion banner card
