@@ -3,7 +3,7 @@
     <item
         android:width="66dp"
         android:height="66dp"
-        android:drawable="@drawable/halalgo_app_icon_v2_1779698294501"
+        android:drawable="@drawable/halalgo_app_icon_1779787997419"
         android:gravity="center" />
 </layer-list>
 

@@ -105,7 +105,7 @@ fun MainAppContent() {
              .padding(8.dp)
          ) {
            androidx.compose.foundation.Image(
-             painter = painterResource(id = R.drawable.halalgo_app_icon_v2_1779698294501),
+             painter = painterResource(id = R.drawable.halalgo_app_icon_1779787997419),
              contentDescription = "Halal Go App Icon",
              modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
            )
@@ -538,8 +538,8 @@ fun GoogleSignInScreen(
     viewModel: MainViewModel,
     onLoginSuccess: (name: String, email: String) -> Unit
 ) {
-    val nameInput = "Silangan East"
-    val emailInput = "silanganeast@gmail.com"
+    var nameInput by remember { mutableStateOf("Ahmed K.") }
+    var emailInput by remember { mutableStateOf("ahmed.k@gmail.com") }
     var showAccountChooser by remember { mutableStateOf(false) }
     var isLoading by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -578,7 +578,7 @@ fun GoogleSignInScreen(
                     .padding(8.dp)
             ) {
                 androidx.compose.foundation.Image(
-                    painter = painterResource(id = R.drawable.halalgo_app_icon_v2_1779698294501),
+                    painter = painterResource(id = R.drawable.halalgo_app_icon_1779787997419),
                     contentDescription = "Halal Go App Icon",
                     modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))
                 )
@@ -602,6 +602,59 @@ fun GoogleSignInScreen(
             )
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Sub-card with inputs for customized testing
+            Card(
+                colors = CardDefaults.cardColors(containerColor = DarkSurface),
+                border = BorderStroke(1.dp, PrimaryContainer.copy(alpha = 0.2f)),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Text(
+                        text = "Demo Credentials Config",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = GoldSecondary,
+                        letterSpacing = 1.sp
+                    )
+
+                    OutlinedTextField(
+                        value = nameInput,
+                        onValueChange = { nameInput = it },
+                        label = { Text("Your Name", color = OnSurfaceVariantText) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryEmerald,
+                            unfocusedBorderColor = PrimaryContainer.copy(alpha = 0.4f),
+                            focusedLabelColor = PrimaryEmerald,
+                            unfocusedLabelColor = OnSurfaceVariantText,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        modifier = Modifier.fillMaxWidth().testTag("auth_name_field")
+                    )
+
+                    OutlinedTextField(
+                        value = emailInput,
+                        onValueChange = { emailInput = it },
+                        label = { Text("Your Email", color = OnSurfaceVariantText) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryEmerald,
+                            unfocusedBorderColor = PrimaryContainer.copy(alpha = 0.4f),
+                            focusedLabelColor = PrimaryEmerald,
+                            unfocusedLabelColor = OnSurfaceVariantText,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        modifier = Modifier.fillMaxWidth().testTag("auth_email_field")
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Google Login Button styled with official brand look
             Button(
