@@ -110,6 +110,12 @@ fun MainAppContent() {
              modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
            )
          }
+         Text(
+           text = "Halal Go",
+           fontSize = 24.sp,
+           fontWeight = FontWeight.Bold,
+           color = PrimaryEmerald
+         )
          CircularProgressIndicator(color = PrimaryEmerald, strokeWidth = 3.dp)
       }
     }
@@ -132,6 +138,8 @@ fun MainAppContent() {
       }
     )
   } else {
+    var showProfileDialog by remember { mutableStateOf(false) }
+
     Scaffold(
       topBar = {
       // Custom visual TopAppBar with profile switcher and status indicator
@@ -145,68 +153,34 @@ fun MainAppContent() {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
           ) {
-            var showProfileDialog by remember { mutableStateOf(false) }
-
-            // Profile image with click to configure profile picture or sign out
-            Box(
+            // App Logo
+            androidx.compose.foundation.Image(
+              painter = painterResource(id = R.drawable.halalgo_app_icon_1779787997419),
+              contentDescription = "Halal Go App Icon",
               modifier = Modifier
-                .size(40.dp)
-                .background(PrimaryContainer, CircleShape)
-                .clip(CircleShape)
-                .clickable {
-                  showProfileDialog = true
-                }
-                .testTag("avatar_profile_switcher")
+                .size(34.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .border(1.dp, GoldSecondary.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+            )
+
+            // App Name
+            Row(
+              verticalAlignment = Alignment.CenterVertically,
+              horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-              if (userProfile?.profilePicture != null) {
-                AsyncImage(
-                  model = userProfile?.profilePicture,
-                  contentDescription = "User profile picture",
-                  modifier = Modifier.fillMaxSize(),
-                  contentScale = ContentScale.Crop
-                )
-              } else {
-                Icon(
-                  imageVector = Icons.Default.Person,
-                  contentDescription = "User profile toggle swapper",
-                  tint = Color.White,
-                  modifier = Modifier.fillMaxSize().padding(6.dp)
-                )
-              }
-            }
-
-            // Profile bottom popover dialog
-            if (showProfileDialog) {
-              UserProfileAndSettingsDialog(
-                userProfile = userProfile,
-                isDriverMode = isDriverMode,
-                onDismiss = { showProfileDialog = false },
-                onSaveChanges = { name, email ->
-                  viewModel.updateProfileNameAndEmail(name, email)
-                },
-                onProfilePictureSelected = { path ->
-                  viewModel.updateProfilePicture(path)
-                },
-                onToggleDriverMode = { mode ->
-                  viewModel.setDriverMode(mode)
-                },
-                onLogout = {
-                  viewModel.logout()
-                }
-              )
-            }
-
-            Column {
               Text(
-                text = userProfile?.name ?: "",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = PrimaryEmerald
+                text = "Halal",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = PrimaryEmerald,
+                letterSpacing = 0.5.sp
               )
               Text(
-                text = if (isDriverMode) "Driver Dashboard" else "Makati, Manila • Passenger",
-                fontSize = 11.sp,
-                color = OnSurfaceVariantText
+                text = "Go",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = GoldSecondary,
+                letterSpacing = 0.5.sp
               )
             }
           }
@@ -216,13 +190,12 @@ fun MainAppContent() {
           if (isDriverMode) {
             Row(
               modifier = Modifier
-                .padding(end = 12.dp)
                 .background(
                   color = if (isDriverOnline) PrimaryContainer else ErrorContainerRed,
                   shape = RoundedCornerShape(100.dp)
                 )
                 .clickable { viewModel.toggleDriverOnline() }
-                .padding(horizontal = 14.dp, vertical = 6.dp),
+                .padding(horizontal = 10.dp, vertical = 6.dp),
               verticalAlignment = Alignment.CenterVertically,
               horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
@@ -257,6 +230,90 @@ fun MainAppContent() {
               imageVector = Icons.Default.Notifications,
               contentDescription = "Notifications alerts feed",
               tint = Color.White
+            )
+          }
+
+          // Custom Vertical divider
+          Spacer(modifier = Modifier.width(4.dp))
+          Box(
+            modifier = Modifier
+              .height(24.dp)
+              .width(1.dp)
+              .background(Color.White.copy(alpha = 0.15f))
+          )
+          Spacer(modifier = Modifier.width(4.dp))
+
+          // Profile area (click to configure profile picture or sign out)
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+              .clip(RoundedCornerShape(8.dp))
+              .clickable { showProfileDialog = true }
+              .padding(horizontal = 8.dp, vertical = 4.dp)
+              .testTag("avatar_profile_switcher")
+          ) {
+            Column(horizontalAlignment = Alignment.End) {
+              Text(
+                text = userProfile?.name ?: "",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                maxLines = 1
+              )
+              Text(
+                text = if (isDriverMode) "Driver" else "Passenger",
+                fontSize = 9.sp,
+                color = OnSurfaceVariantText,
+                maxLines = 1
+              )
+            }
+
+            Box(
+              modifier = Modifier
+                .size(32.dp)
+                .background(PrimaryContainer, CircleShape)
+                .clip(CircleShape)
+            ) {
+              val profilePic = userProfile?.profilePicture
+              if (profilePic != null) {
+                AsyncImage(
+                  model = profilePic,
+                  contentDescription = "User profile picture",
+                  modifier = Modifier.fillMaxSize(),
+                  contentScale = ContentScale.Crop
+                )
+              } else {
+                Icon(
+                  imageVector = Icons.Default.Person,
+                  contentDescription = "User profile toggle swapper",
+                  tint = Color.White,
+                  modifier = Modifier.fillMaxSize().padding(4.dp)
+                )
+              }
+            }
+          }
+
+          Spacer(modifier = Modifier.width(8.dp))
+
+          // Profile bottom popover dialog
+          if (showProfileDialog) {
+            UserProfileAndSettingsDialog(
+              userProfile = userProfile,
+              isDriverMode = isDriverMode,
+              onDismiss = { showProfileDialog = false },
+              onSaveChanges = { name, email ->
+                viewModel.updateProfileNameAndEmail(name, email)
+              },
+              onProfilePictureSelected = { path ->
+                viewModel.updateProfilePicture(path)
+              },
+              onToggleDriverMode = { mode ->
+                viewModel.setDriverMode(mode)
+              },
+              onLogout = {
+                viewModel.logout()
+              }
             )
           }
         }
