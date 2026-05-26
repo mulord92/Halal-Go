@@ -158,9 +158,9 @@ fun MainAppContent() {
               painter = painterResource(id = R.drawable.halalgo_app_icon_1779787997419),
               contentDescription = "Halal Go App Icon",
               modifier = Modifier
-                .size(34.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .border(1.dp, GoldSecondary.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                .size(44.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .border(2.dp, GoldSecondary.copy(alpha = 0.8f), RoundedCornerShape(10.dp))
             )
 
             // App Name
@@ -170,14 +170,14 @@ fun MainAppContent() {
             ) {
               Text(
                 text = "Halal",
-                fontSize = 18.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = PrimaryEmerald,
                 letterSpacing = 0.5.sp
               )
               Text(
                 text = "Go",
-                fontSize = 18.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = GoldSecondary,
                 letterSpacing = 0.5.sp

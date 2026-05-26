@@ -107,24 +107,24 @@ fun RegistrationScreen(
             // App Brand Frame
             Box(
                 modifier = Modifier
-                    .size(90.dp)
-                    .background(DarkSurface, RoundedCornerShape(20.dp))
-                    .border(2.dp, GoldSecondary.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
-                    .padding(8.dp)
+                    .size(120.dp)
+                    .background(DarkSurface, RoundedCornerShape(26.dp))
+                    .border(2.5.dp, GoldSecondary, RoundedCornerShape(26.dp))
+                    .padding(12.dp)
             ) {
                 Image(
                     painter = painterResource(id = R.drawable.halalgo_app_icon_1779787997419),
                     contentDescription = "Halal Go Premium Logo Symbol",
-                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(12.dp))
+                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(16.dp))
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "Halal Go",
-                fontSize = 30.sp,
-                fontWeight = FontWeight.Bold,
+                fontSize = 38.sp,
+                fontWeight = FontWeight.ExtraBold,
                 color = PrimaryEmerald,
                 letterSpacing = 1.sp
             )
