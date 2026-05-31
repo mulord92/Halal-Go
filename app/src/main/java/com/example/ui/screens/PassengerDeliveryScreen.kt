@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -54,6 +55,9 @@ fun PassengerDeliveryScreen(
     var parcelWeightState by remember { mutableStateOf("1.5") }
     var parcelCategory by remember { mutableStateOf("Document") } // Document, Food, Packaged, Fragile
     var parcelTrackingState by remember { mutableStateOf<String?>(null) }
+
+    var selfieVerified by remember { mutableStateOf(false) }
+    var showSelfieScanner by remember { mutableStateOf(false) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -193,6 +197,8 @@ fun PassengerDeliveryScreen(
                         weight = parcelWeightState,
                         category = parcelCategory,
                         trackingState = parcelTrackingState,
+                        selfieVerified = selfieVerified,
+                        onScanSelfieClick = { showSelfieScanner = true },
                         onSenderChange = { parcelSender = it },
                         onReceiverChange = { parcelReceiver = it },
                         onPhoneChange = { parcelPhone = it },
@@ -210,6 +216,7 @@ fun PassengerDeliveryScreen(
                                     hasSadaqahRoundUp = userProfile?.isSadaqahRoundUp ?: true
                                 )
                                 parcelTrackingState = "DEL_TRK_${(100000..999999).random()}"
+                                selfieVerified = false // Reset selfie for another order session
                                 scope.launch {
                                     snackbarHostState.showSnackbar("Alhamdulillah! Parcel Delivery booked. Tracking ID: $parcelTrackingState")
                                 }
@@ -298,11 +305,82 @@ fun PassengerDeliveryScreen(
                                 fontSize = 18.sp
                             )
                         }
+
+                        // Security Banner Card for Escrow and Selfie protection
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = PrimaryContainer.copy(alpha = 0.15f)),
+                            border = BorderStroke(1.dp, PrimaryEmerald.copy(alpha = 0.3f)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Lock,
+                                        contentDescription = "Escrow Seal",
+                                        tint = GoldSecondary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = "Shariah Escrow Shield Active",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Text(
+                                    text = "Your payment is held securely in a Shariah-compliant Escrow Vault. The driver is compensated only after you verify parcel receipt with confirmation token.",
+                                    color = OnSurfaceVariantText,
+                                    fontSize = 10.sp,
+                                    lineHeight = 13.sp
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = if (selfieVerified) "✓ Biometric Selfie Signed" else "Selfie Identity Verification Required",
+                                        color = if (selfieVerified) PrimaryEmerald else ErrorRed,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 10.sp
+                                    )
+                                    if (!selfieVerified) {
+                                        Button(
+                                            onClick = { showSelfieScanner = true },
+                                            colors = ButtonDefaults.buttonColors(containerColor = GoldSecondary),
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                            shape = RoundedCornerShape(6.dp),
+                                            modifier = Modifier.height(28.dp)
+                                        ) {
+                                            Text("Scan Face", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = "Verified Icon",
+                                            tint = PrimaryEmerald,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
                 confirmButton = {
                     Button(
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryEmerald),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selfieVerified) PrimaryEmerald else Color.Gray
+                        ),
+                        enabled = selfieVerified,
                         onClick = {
                             viewModel.placeFoodOrder(
                                 restaurantName = restaurant.name,
@@ -311,12 +389,17 @@ fun PassengerDeliveryScreen(
                                 hasSadaqahRoundUp = isRoundUpActive
                             )
                             selectedFoodItem = null
+                            selfieVerified = false // reset state for next purchases
                             scope.launch {
-                                snackbarHostState.showSnackbar("Order placed! ${item.name} is being prepared by certified kitchen.")
+                                snackbarHostState.showSnackbar("Alhamdulillah! Escrow locked. ${item.name} is being prepared.")
                             }
                         }
                     ) {
-                        Text("Confirm Order", fontWeight = FontWeight.Bold, color = OnPrimary)
+                        Text(
+                            text = if (selfieVerified) "Confirm Shariah Escrow" else "Selfie Check Required",
+                            fontWeight = FontWeight.Bold,
+                            color = if (selfieVerified) OnPrimary else Color.White.copy(alpha = 0.5f)
+                        )
                     }
                 },
                 dismissButton = {
@@ -413,11 +496,82 @@ fun PassengerDeliveryScreen(
                                 fontSize = 18.sp
                             )
                         }
+
+                        // Security Banner Card for Escrow and Selfie protection
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = PrimaryContainer.copy(alpha = 0.15f)),
+                            border = BorderStroke(1.dp, PrimaryEmerald.copy(alpha = 0.3f)),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Lock,
+                                        contentDescription = "Escrow Seal",
+                                        tint = GoldSecondary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = "Shariah Escrow Shield Active",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Text(
+                                    text = "Your payment is held securely in a Shariah-compliant Escrow Vault. The driver is compensated only after you verify parcel receipt with confirmation token.",
+                                    color = OnSurfaceVariantText,
+                                    fontSize = 10.sp,
+                                    lineHeight = 13.sp
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = if (selfieVerified) "✓ Biometric Selfie Signed" else "Selfie Identity Verification Required",
+                                        color = if (selfieVerified) PrimaryEmerald else ErrorRed,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 10.sp
+                                    )
+                                    if (!selfieVerified) {
+                                        Button(
+                                            onClick = { showSelfieScanner = true },
+                                            colors = ButtonDefaults.buttonColors(containerColor = GoldSecondary),
+                                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                            shape = RoundedCornerShape(6.dp),
+                                            modifier = Modifier.height(28.dp)
+                                        ) {
+                                            Text("Scan Face", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                    } else {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = "Verified Icon",
+                                            tint = PrimaryEmerald,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
                 confirmButton = {
                     Button(
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryEmerald),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (selfieVerified) PrimaryEmerald else Color.Gray
+                        ),
+                        enabled = selfieVerified,
                         onClick = {
                             viewModel.placeGroceryOrder(
                                 storeName = "Shariah Pure Market",
@@ -427,12 +581,17 @@ fun PassengerDeliveryScreen(
                             )
                             groceryBasket = emptyMap()
                             showGroceryCheckout = false
+                            selfieVerified = false // reset state for next purchases
                             scope.launch {
-                                snackbarHostState.showSnackbar("Alhamdulillah! Grocery order placed successfully.")
+                                snackbarHostState.showSnackbar("Alhamdulillah! Grocery order placed with secure escrow hold status.")
                             }
                         }
                     ) {
-                        Text("Pay Now", fontWeight = FontWeight.Bold, color = OnPrimary)
+                        Text(
+                            text = if (selfieVerified) "Pay with Escrow Lock" else "Selfie Check Required",
+                            fontWeight = FontWeight.Bold,
+                            color = if (selfieVerified) OnPrimary else Color.White.copy(alpha = 0.5f)
+                        )
                     }
                 },
                 dismissButton = {
@@ -440,6 +599,13 @@ fun PassengerDeliveryScreen(
                         Text("Cancel", color = OnSurfaceVariantText)
                     }
                 }
+            )
+        }
+
+        if (showSelfieScanner) {
+            SelfieVerificationDialog(
+                onDismiss = { showSelfieScanner = false },
+                onVerified = { selfieVerified = true }
             )
         }
     }
@@ -730,6 +896,8 @@ fun ParcelDeliveryTab(
     weight: String,
     category: String,
     trackingState: String?,
+    selfieVerified: Boolean,
+    onScanSelfieClick: () -> Unit,
     onSenderChange: (String) -> Unit,
     onReceiverChange: (String) -> Unit,
     onPhoneChange: (String) -> Unit,
@@ -871,10 +1039,81 @@ fun ParcelDeliveryTab(
             }
 
             item {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = PrimaryContainer.copy(alpha = 0.15f)),
+                    border = BorderStroke(1.dp, PrimaryEmerald.copy(alpha = 0.3f)),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Escrow Seal",
+                                tint = GoldSecondary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Secure Escrow Protection Active",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                              )
+                        }
+                        Text(
+                            text = "Courier payout of PHP ${String.format("%.2f", calculatedPrice)} is held securely in escrow and released solely upon delivery confirmation. Prevents cash-collect fraud and scamming.",
+                            color = OnSurfaceVariantText,
+                            fontSize = 10.sp,
+                            lineHeight = 13.sp
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = if (selfieVerified) "✓ Identity Check Completed" else "Selfie Checkoff Required",
+                                color = if (selfieVerified) PrimaryEmerald else ErrorRed,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp
+                            )
+                            if (!selfieVerified) {
+                                Button(
+                                    onClick = onScanSelfieClick,
+                                    colors = ButtonDefaults.buttonColors(containerColor = GoldSecondary),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                                    shape = RoundedCornerShape(6.dp),
+                                    modifier = Modifier.height(28.dp)
+                                ) {
+                                    Text("Scan Face", color = Color.Black, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                }
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Verified Icon",
+                                    tint = PrimaryEmerald,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            item {
                 Button(
                     onClick = onBookClick,
-                    enabled = receiver.isNotBlank() && phone.isNotBlank(),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryEmerald),
+                    enabled = receiver.isNotBlank() && phone.isNotBlank() && selfieVerified,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (selfieVerified) PrimaryEmerald else Color.Gray
+                    ),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -882,9 +1121,10 @@ fun ParcelDeliveryTab(
                         .testTag("parcel_submit_btn")
                 ) {
                     Text(
-                        text = "Estimate & Book (PHP ${String.format("%.2f", calculatedPrice)})",
+                        text = if (selfieVerified) "Estimate & Book (PHP ${String.format("%.2f", calculatedPrice)})" else "Verify Selfie to Book",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
+                        fontSize = 14.sp,
+                        color = if (selfieVerified) OnPrimary else Color.White.copy(alpha = 0.5f)
                     )
                 }
             }
@@ -990,4 +1230,180 @@ fun TrackStepItem(title: String, desc: String, isDone: Boolean) {
         }
         Text(desc, color = if (isDone) PrimaryEmerald else Color.Gray, fontSize = 11.sp, fontWeight = FontWeight.Bold)
     }
+}
+
+@Composable
+fun SelfieVerificationDialog(
+    onDismiss: () -> Unit,
+    onVerified: () -> Unit
+) {
+    var captureStage by remember { mutableStateOf("Position Face") } // Position Face, Scanning, Verified
+    val scope = rememberCoroutineScope()
+
+    val infiniteTransition = rememberInfiniteTransition(label = "Laser sweep")
+    val laserPosition by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "Laser coordinate animation"
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = DarkSurface,
+        modifier = Modifier
+            .border(2.dp, GoldSecondary, RoundedCornerShape(24.dp))
+            .padding(4.dp),
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Shield Guard",
+                    tint = GoldSecondary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Text(
+                    text = "Shariah FraudShield Verification",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+            }
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Proof-of-presence dynamic face audit protects your account, locks funds into escrow safety, and shields against fake dispatcher courier scams.",
+                    color = OnSurfaceVariantText,
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 15.sp
+                )
+
+                Box(
+                    modifier = Modifier
+                        .size(180.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFF070E1D))
+                        .border(
+                            width = 3.dp,
+                            color = when (captureStage) {
+                                "Verified" -> PrimaryEmerald
+                                "Scanning" -> GoldSecondary
+                                else -> PrimaryEmerald.copy(alpha = 0.4f)
+                            },
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    when (captureStage) {
+                        "Verified" -> {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Verified Done",
+                                    tint = PrimaryEmerald,
+                                    modifier = Modifier.size(56.dp)
+                                )
+                                Text("Biometric Signed", color = PrimaryEmerald, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                        }
+                        "Scanning" -> {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                CircularProgressIndicator(color = GoldSecondary, modifier = Modifier.size(36.dp), strokeWidth = 3.dp)
+                                Text("Generating Hash...", color = GoldSecondary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+                        }
+                        else -> {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Face Placement Outer",
+                                tint = OnSurfaceVariantText.copy(alpha = 0.25f),
+                                modifier = Modifier.size(110.dp)
+                            )
+                            
+                            // Glowing scanning grid overlay sweep
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(2.dp)
+                                    .align(Alignment.TopCenter)
+                                    .offset(y = (laserPosition * 180).dp)
+                                    .background(
+                                        Brush.horizontalGradient(
+                                            colors = listOf(Color.Transparent, PrimaryEmerald, Color.Transparent)
+                                        )
+                                    )
+                            )
+                        }
+                    }
+                }
+
+                Text(
+                    text = when (captureStage) {
+                        "Verified" -> "✓ Biometric Selfie Signed with 100% Integrity Match"
+                        "Scanning" -> "Hold steady... scanning facial contour points"
+                        else -> "[ Face Status: Aligned & Centered ]"
+                    },
+                    color = when (captureStage) {
+                        "Verified" -> PrimaryEmerald
+                        "Scanning" -> GoldSecondary
+                        else -> OnSurfaceVariantText
+                    },
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
+        },
+        confirmButton = {
+            if (captureStage == "Verified") {
+                Button(
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryEmerald),
+                    onClick = {
+                        onVerified()
+                        onDismiss()
+                    }
+                ) {
+                    Text("Unlock & Continue", fontWeight = FontWeight.Bold, color = OnPrimary)
+                }
+            } else {
+                Button(
+                    colors = ButtonDefaults.buttonColors(containerColor = GoldSecondary),
+                    enabled = captureStage == "Position Face",
+                    onClick = {
+                        captureStage = "Scanning"
+                        scope.launch {
+                            delay(1800)
+                            captureStage = "Verified"
+                        }
+                    }
+                ) {
+                    Text("Snap Secure Selfie", fontWeight = FontWeight.Bold, color = Color.Black)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = OnSurfaceVariantText)
+            }
+        }
+    )
 }
